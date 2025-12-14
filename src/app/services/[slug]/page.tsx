@@ -1,28 +1,75 @@
+"use client";
+
 import Link from "next/link";
-import { notFound } from "next/navigation";
-import { categories, freelancers } from "@/data/mockData";
+import { notFound, useParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import FreelancerCard from "@/components/FreelancerCard";
-import { ChevronLeft, Filter } from "lucide-react";
+import { ChevronLeft, Filter, RefreshCw } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
-interface ServicePageProps {
-    params: {
-        slug: string;
-    };
-}
+export default function ServicePage() {
+    // In client components, use useParams() hook
+    const params = useParams();
+    const slug = params?.slug as string;
 
-export default async function ServicePage({ params }: ServicePageProps) {
-    // Await params in newer Next.js versions if needed, but safe here for now or use use helper
-    const { slug } = await params;
+    const [category, setCategory] = useState<any>(null);
+    const [freelancers, setFreelancers] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    const category = categories.find((c) => c.slug === slug);
+    useEffect(() => {
+        const fetchData = async () => {
+            if (!slug) return;
+            setLoading(true);
 
-    if (!category) {
-        notFound();
+            // 1. Fetch Category by Slug
+            const { data: catData, error: catError } = await supabase
+                .from('categories')
+                .select('*')
+                .eq('slug', slug)
+                .single();
+
+            if (catError || !catData) {
+                console.error("Category not found:", catError);
+                setLoading(false);
+                return;
+            }
+
+            setCategory(catData);
+
+            // 2. Fetch Freelancers matching this Category Name (Role)
+            const { data: freeData, error: freeError } = await supabase
+                .from('freelancers')
+                .select('*')
+                .ilike('role', catData.name); // Case-insensitive match
+
+            if (freeData) setFreelancers(freeData);
+
+            setLoading(false);
+        };
+
+        fetchData();
+    }, [slug]);
+
+    if (loading) {
+        return (
+            <div className="flex min-h-screen items-center justify-center bg-gray-50">
+                <div className="flex items-center gap-2 text-primary animate-pulse">
+                    <RefreshCw className="animate-spin h-6 w-6" />
+                    <span className="font-bold">Loading...</span>
+                </div>
+            </div>
+        );
     }
 
-    const categoryFreelancers = freelancers.filter(
-        (f) => f.categoryId === category.id
-    );
+    if (!category) {
+        // You can render a custom not found here or just return null
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center gap-4">
+                <h1 className="text-2xl font-bold">Category not found</h1>
+                <Link href="/" className="text-primary hover:underline">Go Home</Link>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gray-50 pb-20">
@@ -50,9 +97,9 @@ export default async function ServicePage({ params }: ServicePageProps) {
             </div>
 
             <div className="container mx-auto px-4 py-8">
-                {categoryFreelancers.length > 0 ? (
+                {freelancers.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {categoryFreelancers.map((freelancer) => (
+                        {freelancers.map((freelancer) => (
                             <FreelancerCard key={freelancer.id} freelancer={freelancer} />
                         ))}
                     </div>

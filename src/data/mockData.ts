@@ -11,12 +11,13 @@ export type Freelancer = {
     categoryId: string;
     name: string;
     role: string;
-    bio: string;
+    bio?: string;
     rate: number;
     rateUnit: "hour" | "service";
     rating: number; // 0-5
     reviewCount: number;
-    imageUrl: string;
+    image_url?: string;
+    imageUrl?: string;
     location: string;
     availability: "Available" | "Busy" | "Offline";
     skills: string[];
