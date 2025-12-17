@@ -67,7 +67,7 @@ export default function Header({
                 <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-3 mask-gradient">
                     <Link
                         href="/"
-                        className={`text-sm font-bold uppercase tracking-wide px-4 py-2 rounded-full transition-all whitespace-nowrap border ${pathname === '/'
+                        className={`text-[13px] font-bold uppercase tracking-wide px-3.5 py-1.5 rounded-full transition-all whitespace-nowrap border ${pathname === '/'
                             ? 'bg-gray-900 text-white border-gray-900'
                             : 'text-gray-500 hover:text-primary hover:bg-gray-50 border-transparent'
                             }`}
@@ -80,7 +80,7 @@ export default function Header({
                             <Link
                                 key={cat.id}
                                 href={`/services/${cat.slug}`}
-                                className={`text-sm font-bold uppercase tracking-wide px-4 py-2 rounded-full transition-all whitespace-nowrap border ${isActive
+                                className={`text-[13px] font-bold uppercase tracking-wide px-3.5 py-1.5 rounded-full transition-all whitespace-nowrap border ${isActive
                                     ? 'bg-primary text-white border-primary shadow-md shadow-violet-200'
                                     : 'text-gray-500 hover:text-primary hover:bg-violet-50 border-transparent'
                                     }`}

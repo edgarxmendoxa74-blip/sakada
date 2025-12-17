@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import AdminSidebar from "@/components/AdminSidebar";
 import { Plus, Edit, Trash2, Link as LinkIcon, RefreshCw } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { uploadFile } from "@/lib/storage";
 
 export default function FreelancersPage() {
     const router = useRouter();
@@ -18,6 +19,7 @@ export default function FreelancersPage() {
     const [categories, setCategories] = useState<any[]>([]);
 
     // Form State
+    const [imageFile, setImageFile] = useState<File | null>(null);
     const [formData, setFormData] = useState({
         name: "",
         role: "", // Will be populated by first category or empty
@@ -98,6 +100,7 @@ export default function FreelancersPage() {
 
     const handleAdd = () => {
         setEditingFreelancer(null);
+        setImageFile(null);
         setFormData({
             name: "",
             role: categories.length > 0 ? categories[0].name : "", // Default to first category
@@ -114,18 +117,35 @@ export default function FreelancersPage() {
     // 3. Submit (Add/Edit)
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        console.log("Submitting freelancer form...", formData);
+
+        let finalImageUrl = formData.imageUrl;
+
+        if (imageFile) {
+            console.log("Uploading image...", imageFile.name);
+            const { url, error } = await uploadFile(imageFile, 'uploads', 'freelancers');
+            if (error) {
+                alert(`Error Uploading Image: ${error.message || JSON.stringify(error)}`);
+                console.error("Upload Error:", error);
+                return;
+            }
+            if (url) finalImageUrl = url;
+            console.log("Image uploaded:", finalImageUrl);
+        }
 
         const payload = {
             name: formData.name,
-            role: formData.role, // This now stores the Category Name
-            rate: Number(formData.rate),
+            role: formData.role || (categories.length > 0 ? categories[0].name : "General"), // Fallback if empty
+            rate: Number(formData.rate) || 0,
             rate_unit: formData.rateUnit,
             availability: formData.availability,
-            location: formData.location,
-            image_url: formData.imageUrl,
-            bio: formData.bio,
+            location: formData.location || "Manila",
+            image_url: finalImageUrl,
+            bio: formData.bio || "",
             skills: ["General"]
         };
+
+        let resultError = null;
 
         if (editingFreelancer) {
             // Edit Logic
@@ -133,17 +153,23 @@ export default function FreelancersPage() {
                 .from('freelancers')
                 .update(payload)
                 .eq('id', editingFreelancer.id);
-
-            if (!error) fetchData(); // Refresh list
+            resultError = error;
         } else {
             // Add Logic
             const { error } = await supabase
                 .from('freelancers')
                 .insert([payload]);
-
-            if (!error) fetchData();
+            resultError = error;
         }
-        setIsModalOpen(false);
+
+        if (resultError) {
+            alert(`Database Error: ${resultError.message}`);
+            console.error("Database Error:", resultError);
+        } else {
+            alert("Freelancer saved successfully!");
+            fetchData();
+            setIsModalOpen(false);
+        }
     };
 
     if (!isAuthenticated) return null;
@@ -170,17 +196,18 @@ export default function FreelancersPage() {
                                     <label className="cursor-pointer bg-white border border-gray-300 py-2 px-4 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
                                         Choose File
                                         <input
-                                            // Re-implementing Base64 logic from previous step if it got lost in full file overwrite
                                             type="file"
                                             className="hidden"
                                             accept="image/*"
                                             onChange={(e) => {
                                                 const file = e.target.files?.[0];
                                                 if (file) {
-                                                    if (file.size > 1024 * 1024) {
-                                                        alert("File too large. Please choose an image under 1MB.");
+                                                    // 2MB limit
+                                                    if (file.size > 2 * 1024 * 1024) {
+                                                        alert("File too large. Please choose an image under 2MB.");
                                                         return;
                                                     }
+                                                    setImageFile(file);
                                                     const reader = new FileReader();
                                                     reader.onloadend = () => {
                                                         setFormData({ ...formData, imageUrl: reader.result as string });

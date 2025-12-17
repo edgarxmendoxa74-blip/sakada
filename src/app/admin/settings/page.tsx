@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import AdminSidebar from "@/components/AdminSidebar";
 import { Plus, Trash2, CreditCard, Layers, Image as ImageIcon, FileText, Upload, RefreshCw, QrCode } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { uploadFile } from "@/lib/storage";
 import {
     getSiteSettings,
     saveSiteSettings,
@@ -29,11 +30,15 @@ export default function SettingsPage() {
     const [paymentForm, setPaymentForm] = useState({
         name: "",
         accountNumber: "",
-        qrCode: "" as string | null
+        qrCode: "" as string | null,
+        qrFile: null as File | null
     });
 
     // Site Identity State
     const [logoPreview, setLogoPreview] = useState<string | null>(null);
+    const [logoFile, setLogoFile] = useState<File | null>(null);
+
+    // About Us State
 
     // About Us State
     const [aboutUsContent, setAboutUsContent] = useState("");
@@ -110,15 +115,27 @@ export default function SettingsPage() {
     const handleAddPayment = async (e: React.FormEvent) => {
         e.preventDefault();
         if (paymentForm.name.trim()) {
+            let finalQrUrl = paymentForm.qrCode;
+
+            if (paymentForm.qrFile) {
+                const { url, error } = await uploadFile(paymentForm.qrFile, 'uploads', 'qr-codes');
+                if (error) {
+                    alert("Failed to upload QR code. Please ensure 'uploads' bucket exists in Supabase.");
+                    console.error(error);
+                    return;
+                }
+                finalQrUrl = url;
+            }
+
             const newMethod: PaymentMethod = {
                 name: paymentForm.name,
                 account_number: paymentForm.accountNumber,
-                qr_code_url: paymentForm.qrCode
+                qr_code_url: finalQrUrl
             };
 
             const { data, error } = await addPaymentMethod(newMethod);
             if (!error) {
-                setPaymentForm({ name: "", accountNumber: "", qrCode: null });
+                setPaymentForm({ name: "", accountNumber: "", qrCode: null, qrFile: null });
                 // Refresh list
                 const updated = await getPaymentMethods();
                 setPaymentMethods(updated);
@@ -142,12 +159,13 @@ export default function SettingsPage() {
     const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            // Check size (e.g. 500KB limit for base64 safety)
-            if (file.size > 500 * 1024) {
-                alert("File too large. Please keep under 500KB.");
+            // Check size (now 5MB is fine for storage)
+            if (file.size > 5 * 1024 * 1024) {
+                alert("File too large. Please keep under 5MB.");
                 return;
             }
 
+            setLogoFile(file);
             const reader = new FileReader();
             reader.onloadend = () => {
                 setLogoPreview(reader.result as string);
@@ -157,9 +175,25 @@ export default function SettingsPage() {
     };
 
     const handleSaveLogo = async () => {
-        if (!logoPreview) return;
-        const { error } = await saveSiteSettings({ logo_url: logoPreview });
-        if (!error) alert("Logo saved successfully!");
+        if (!logoPreview && !logoFile) return;
+
+        let finalLogoUrl = logoPreview;
+
+        if (logoFile) {
+            const { url, error } = await uploadFile(logoFile, 'uploads', 'site-assets');
+            if (error) {
+                alert("Failed to upload logo. Please ensure 'uploads' bucket exists and is public.");
+                console.error(error);
+                return;
+            }
+            finalLogoUrl = url;
+        }
+
+        const { error } = await saveSiteSettings({ logo_url: finalLogoUrl });
+        if (!error) {
+            alert("Logo saved successfully!");
+            setLogoFile(null);
+        }
         else alert("Failed to save logo.");
     };
 
@@ -172,13 +206,15 @@ export default function SettingsPage() {
     const handleQrUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            if (file.size > 500 * 1024) {
-                alert("File too large. Please choose an image under 500KB.");
+            // 2MB limit for QR
+            if (file.size > 2 * 1024 * 1024) {
+                alert("File too large. Please choose an image under 2MB.");
                 return;
             }
+            // Preview
             const reader = new FileReader();
             reader.onloadend = () => {
-                setPaymentForm({ ...paymentForm, qrCode: reader.result as string });
+                setPaymentForm(prev => ({ ...prev, qrCode: reader.result as string, qrFile: file }));
             };
             reader.readAsDataURL(file);
         }
@@ -225,7 +261,7 @@ export default function SettingsPage() {
                                             Upload New Logo
                                             <input type="file" className="hidden" accept="image/*" onChange={handleLogoChange} />
                                         </label>
-                                        <p className="text-xs text-gray-400 mb-2">Recommended size: 512x512</p>
+                                        <p className="text-xs text-gray-400 mb-2">Recommended size: 512x512 (Max 5MB)</p>
                                         <button
                                             onClick={handleSaveLogo}
                                             className="text-xs text-primary font-bold hover:underline"
