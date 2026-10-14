@@ -4,7 +4,6 @@ import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ChatButton from "@/components/ChatButton";
-import { supabase } from "@/lib/supabase";
 import { getSiteSettings } from "@/lib/settings";
 
 const outfit = Outfit({
@@ -30,14 +29,12 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   // Server-side fetching
-  const { data: categories } = await supabase.from('categories').select('*').order('name');
   const settings = await getSiteSettings();
 
   return (
     <html lang="en">
       <body className={`min-h-screen flex flex-col font-sans ${outfit.className}`}>
         <Header
-          initialCategories={categories || []}
           initialLogoUrl={settings?.logo_url || null}
         />
         <main className="flex-1">{children}</main>

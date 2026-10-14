@@ -1,15 +1,13 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { RefreshCw, Search, ShieldCheck, Zap, Wallet } from "lucide-react";
 import FreelancerCard from "@/components/FreelancerCard";
 import BookingModal from "@/components/BookingModal";
 import { supabase } from "@/lib/supabase";
-import { type Category, type Freelancer } from "@/lib/types";
+import { type Freelancer } from "@/lib/types";
 
 export default function Home() {
-  const [categories, setCategories] = useState<Category[]>([]);
   const [freelancers, setFreelancers] = useState<Freelancer[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
@@ -17,12 +15,8 @@ export default function Home() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const [cats, free] = await Promise.all([
-        supabase.from("categories").select("*").order("name"),
-        supabase.from("freelancers").select("*").order("created_at", { ascending: false }),
-      ]);
-      if (cats.data) setCategories(cats.data);
-      if (free.data) setFreelancers(free.data);
+      const { data } = await supabase.from("freelancers").select("*").order("created_at", { ascending: false });
+      if (data) setFreelancers(data);
       setLoading(false);
     };
     fetchData();
@@ -55,7 +49,7 @@ export default function Home() {
             Book trusted services, <span className="text-brand-orange">one tap away</span>
           </h1>
           <p className="mx-auto mt-3 max-w-xl text-sm text-blue-100 sm:text-base">
-            Pick a category, choose a provider, and book in minutes. Pay by GCash or bank and confirm over Messenger.
+            Choose a service and book in minutes. Pay by GCash or bank and confirm over Messenger.
           </p>
           <div className="relative mx-auto mt-7 max-w-xl">
             <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
@@ -103,32 +97,18 @@ export default function Home() {
           )}
         </div>
       ) : (
-        <div className="container mx-auto space-y-12 px-4 py-8 sm:py-12">
-          {categories.length === 0 ? (
+        <div className="container mx-auto px-4 py-8 sm:py-12">
+          {freelancers.length === 0 ? (
             <div className="py-20 text-center text-gray-500">
               <h3 className="mb-2 text-xl font-bold">Welcome to Sakada Services!</h3>
-              <p>No services are listed yet. Admin, please add categories in the Dashboard.</p>
+              <p>No services are listed yet. Admin, please add services in the Dashboard.</p>
             </div>
           ) : (
             <>
-              {/* Providers per category */}
-              {categories.map((category) => {
-                const list = freelancers.filter((f) => (f.role || "").toLowerCase() === category.name.toLowerCase());
-                if (list.length === 0) return null;
-                return (
-                  <section key={category.id}>
-                    <div className="mb-4 flex items-end justify-between border-b pb-3">
-                      <h2 className="text-xl font-black tracking-tight text-gray-900 sm:text-2xl">{category.name}</h2>
-                      <Link href={`/services/${category.slug}`} className="text-sm font-bold text-primary hover:underline">
-                        View all
-                      </Link>
-                    </div>
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 xl:grid-cols-4">
-                      {list.slice(0, 4).map((f) => <FreelancerCard key={f.id} freelancer={f} onBook={setSelected} />)}
-                    </div>
-                  </section>
-                );
-              })}
+              <h2 className="mb-4 border-b pb-3 text-xl font-black tracking-tight text-gray-900 sm:text-2xl">Our Services</h2>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 xl:grid-cols-4">
+                {freelancers.map((f) => <FreelancerCard key={f.id} freelancer={f} onBook={setSelected} />)}
+              </div>
             </>
           )}
         </div>

@@ -11,7 +11,7 @@ export const metadata = {
 export const dynamic = "force-dynamic";
 
 const STEPS = [
-    { icon: Search, title: "Choose a service", text: "Browse by category or search for the service you need." },
+    { icon: Search, title: "Choose a service", text: "Browse the list or search for the service you need." },
     { icon: CalendarCheck, title: "Fill in your details", text: "Tell us who you are, when you need it and what the job is." },
     { icon: Wallet, title: "Send payment", text: "Pay through GCash or bank using the QR code or account number shown." },
     { icon: MessageCircle, title: "Confirm on Messenger", text: "Send your booking to us on Messenger and we'll confirm your slot." },

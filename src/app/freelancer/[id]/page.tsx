@@ -6,7 +6,7 @@ import Link from "next/link";
 import { MapPin, Shield, ArrowLeft, CheckCircle2, RefreshCw } from "lucide-react";
 import BookingModal from "@/components/BookingModal";
 import { supabase } from "@/lib/supabase";
-import { type Category, type Freelancer, formatRate } from "@/lib/types";
+import { type Freelancer, formatRate } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 export default function FreelancerPage() {
@@ -14,7 +14,6 @@ export default function FreelancerPage() {
     const id = Array.isArray(params?.id) ? params.id[0] : params?.id;
 
     const [freelancer, setFreelancer] = useState<Freelancer | null>(null);
-    const [category, setCategory] = useState<Category | null>(null);
     const [loading, setLoading] = useState(true);
     const [agreed, setAgreed] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -25,8 +24,6 @@ export default function FreelancerPage() {
             const { data } = await supabase.from("freelancers").select("*").eq("id", id).single();
             if (data) {
                 setFreelancer(data);
-                const { data: cat } = await supabase.from("categories").select("*").ilike("name", data.role).maybeSingle();
-                setCategory(cat);
             }
             setLoading(false);
         };
@@ -70,11 +67,11 @@ export default function FreelancerPage() {
             <div className="border-b bg-white px-4 py-3">
                 <div className="container mx-auto">
                     <Link
-                        href={category ? `/services/${category.slug}` : "/"}
+                        href="/"
                         className="flex items-center text-sm text-gray-500 hover:text-primary"
                     >
                         <ArrowLeft className="mr-2 h-4 w-4" />
-                        Back to {category?.name || "services"}
+                        Back to services
                     </Link>
                 </div>
             </div>
