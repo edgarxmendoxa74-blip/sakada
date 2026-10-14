@@ -1,7 +1,6 @@
 import Link from "next/link";
-import { Star, MapPin } from "lucide-react";
-import { type Freelancer } from "@/data/mockData";
-import { cn } from "@/lib/utils";
+import { MapPin } from "lucide-react";
+import { type Freelancer, formatRate } from "@/lib/types";
 
 interface FreelancerCardProps {
     freelancer: Freelancer;
@@ -9,61 +8,58 @@ interface FreelancerCardProps {
 }
 
 export default function FreelancerCard({ freelancer, onBook }: FreelancerCardProps) {
+    const available = freelancer.availability === "Available";
+
     return (
-        <div className="group relative overflow-hidden rounded-lg bg-white border border-gray-100 transition-all hover:shadow-xl">
-            <div className="aspect-[4/3] w-full bg-gray-100 relative overflow-hidden">
+        <div className="group flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-all hover:shadow-lg">
+            <Link href={`/freelancer/${freelancer.id}`} className="relative block aspect-[4/3] w-full overflow-hidden bg-gray-100">
                 {freelancer.image_url ? (
-                    <img src={freelancer.image_url} alt={freelancer.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={freelancer.image_url} alt={freelancer.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
                 ) : (
-                    <div className="absolute inset-0 flex items-center justify-center bg-gray-200 text-gray-400 text-5xl font-black">
+                    <div className="absolute inset-0 flex items-center justify-center bg-blue-50 text-5xl font-black text-primary/40">
                         {freelancer.name.charAt(0)}
                     </div>
                 )}
-                {freelancer.availability === 'Available' && (
-                    <div className="absolute top-3 left-3 rounded bg-green-500 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm">
-                        Available Now
-                    </div>
-                )}
-            </div>
+                <span
+                    className={`absolute left-3 top-3 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm ${available ? "bg-green-500" : freelancer.availability === "Busy" ? "bg-amber-500" : "bg-gray-500"
+                        }`}
+                >
+                    {available ? "Available" : freelancer.availability}
+                </span>
+            </Link>
 
-            <div className="p-4">
-                <div className="mb-2">
-                    <h3 className="text-lg font-bold text-gray-900 leading-tight">
-                        {freelancer.name}
-                    </h3>
-                    <p className="text-sm text-gray-500 font-medium truncate">{freelancer.role}</p>
-                </div>
-
-                {freelancer.bio && (
-                    <p className="text-xs text-gray-400 mb-3 line-clamp-2">
-                        {freelancer.bio}
+            <div className="flex flex-1 flex-col p-4">
+                <Link href={`/freelancer/${freelancer.id}`}>
+                    <h3 className="text-base font-bold leading-tight text-gray-900 sm:text-lg">{freelancer.name}</h3>
+                </Link>
+                <p className="truncate text-sm font-medium text-primary">{freelancer.role}</p>
+                {freelancer.location && (
+                    <p className="mt-1 flex items-center gap-1 text-xs text-gray-400">
+                        <MapPin className="h-3 w-3 shrink-0" /> {freelancer.location}
                     </p>
                 )}
+                {freelancer.bio && <p className="mt-2 line-clamp-2 text-xs text-gray-500">{freelancer.bio}</p>}
 
-                <div className="flex items-center gap-1 mb-4">
-                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                    <span className="text-sm font-bold text-gray-900">{freelancer.rating}</span>
-                    <span className="text-xs text-gray-400">({freelancer.reviewCount} reviews)</span>
-                </div>
-
-                <div className="flex items-center justify-between mt-4">
+                <div className="mt-auto flex items-center justify-between gap-2 pt-4">
                     <div>
-                        <span className="block text-xs text-gray-400 font-semibold uppercase">Starting at</span>
-                        <span className="text-xl font-black text-gray-900">₱{freelancer.rate}</span>
+                        <span className="block text-[10px] font-semibold uppercase text-gray-400">Starting at</span>
+                        <span className="text-lg font-black text-gray-900">{formatRate(freelancer.rate, freelancer.rate_unit)}</span>
                     </div>
                     {onBook ? (
                         <button
                             onClick={() => onBook(freelancer)}
-                            className="rounded-full bg-gray-900 px-5 py-2.5 text-xs font-bold uppercase tracking-wide text-white transition-transform active:scale-95 group-hover:bg-primary"
+                            disabled={freelancer.availability === "Offline"}
+                            className="rounded-full bg-gray-900 px-5 py-2.5 text-xs font-bold uppercase tracking-wide text-white transition-all active:scale-95 hover:bg-primary disabled:cursor-not-allowed disabled:bg-gray-300"
                         >
                             Book Now
                         </button>
                     ) : (
                         <Link
                             href={`/freelancer/${freelancer.id}`}
-                            className="rounded-full bg-gray-900 px-5 py-2.5 text-xs font-bold uppercase tracking-wide text-white transition-transform active:scale-95 group-hover:bg-primary"
+                            className="rounded-full bg-gray-900 px-5 py-2.5 text-xs font-bold uppercase tracking-wide text-white transition-all active:scale-95 hover:bg-primary"
                         >
-                            Book Now
+                            View
                         </Link>
                     )}
                 </div>

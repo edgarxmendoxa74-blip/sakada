@@ -1,181 +1,183 @@
 "use client";
 
-import { useState } from "react";
-import { notFound, useParams } from "next/navigation";
-import { freelancers, categories } from "@/data/mockData";
-import { Star, MapPin, Shield, Info, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 import Link from "next/link";
+import { MapPin, Shield, ArrowLeft, CheckCircle2, RefreshCw } from "lucide-react";
 import BookingModal from "@/components/BookingModal";
+import { supabase } from "@/lib/supabase";
+import { type Category, type Freelancer, formatRate } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 export default function FreelancerPage() {
     const params = useParams();
     const id = Array.isArray(params?.id) ? params.id[0] : params?.id;
 
-    const freelancer = freelancers.find((f) => f.id === id);
+    const [freelancer, setFreelancer] = useState<Freelancer | null>(null);
+    const [category, setCategory] = useState<Category | null>(null);
+    const [loading, setLoading] = useState(true);
     const [agreed, setAgreed] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-    if (!freelancer) {
+    useEffect(() => {
+        const load = async () => {
+            if (!id) return;
+            const { data } = await supabase.from("freelancers").select("*").eq("id", id).single();
+            if (data) {
+                setFreelancer(data);
+                const { data: cat } = await supabase.from("categories").select("*").ilike("name", data.role).maybeSingle();
+                setCategory(cat);
+            }
+            setLoading(false);
+        };
+        load();
+    }, [id]);
+
+    if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
-                <h1 className="text-2xl font-bold">Freelancer not found</h1>
+            <div className="flex min-h-[60vh] items-center justify-center text-primary">
+                <RefreshCw className="h-6 w-6 animate-spin" />
             </div>
         );
     }
 
-    const category = categories.find((c) => c.id === freelancer.categoryId);
+    if (!freelancer) {
+        return (
+            <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3">
+                <h1 className="text-2xl font-bold">Provider not found</h1>
+                <Link href="/" className="text-primary hover:underline">Go Home</Link>
+            </div>
+        );
+    }
+
+    const canBook = agreed && freelancer.availability !== "Offline";
+    const bookLabel = freelancer.availability === "Offline" ? "Currently Offline" : agreed ? "Book Now" : "Accept Terms to Book";
+    const bookButton = (
+        <button
+            disabled={!canBook}
+            onClick={() => setIsModalOpen(true)}
+            className={cn(
+                "w-full rounded-xl py-3.5 font-bold text-white shadow-lg transition-all",
+                canBook ? "bg-primary hover:bg-primary/90 active:scale-95" : "cursor-not-allowed bg-gray-300"
+            )}
+        >
+            {bookLabel}
+        </button>
+    );
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-20">
-            <div className="bg-white border-b sticky top-16 z-30 px-4 py-4">
+        <div className="min-h-screen bg-gray-50 pb-28 lg:pb-16">
+            <div className="border-b bg-white px-4 py-3">
                 <div className="container mx-auto">
-                    <Link href={`/services/${category?.slug}`} className="flex items-center text-sm text-gray-500 hover:text-primary">
-                        <ArrowLeft className="h-4 w-4 mr-2" />
-                        Back to {category?.name}
+                    <Link
+                        href={category ? `/services/${category.slug}` : "/"}
+                        className="flex items-center text-sm text-gray-500 hover:text-primary"
+                    >
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        Back to {category?.name || "services"}
                     </Link>
                 </div>
             </div>
 
-            <div className="container mx-auto px-4 py-8 max-w-5xl">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Main Content */}
-                    <div className="lg:col-span-2 space-y-8">
-                        {/* Profile Header */}
-                        <div className="bg-white rounded-2xl p-8 border shadow-sm">
-                            <div className="flex flex-col md:flex-row gap-6 items-start">
-                                <div className="h-24 w-24 rounded-full bg-gray-100 flex items-center justify-center text-3xl font-bold text-gray-400 shrink-0">
-                                    {freelancer.name.charAt(0)}
+            <div className="container mx-auto max-w-5xl px-4 py-6 sm:py-8">
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8">
+                    <div className="space-y-6 lg:col-span-2">
+                        <div className="overflow-hidden rounded-2xl border bg-white shadow-sm">
+                            <div className="aspect-[16/9] w-full bg-blue-50 sm:aspect-[21/9]">
+                                {freelancer.image_url ? (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img src={freelancer.image_url} alt={freelancer.name} className="h-full w-full object-cover" />
+                                ) : (
+                                    <div className="flex h-full items-center justify-center text-6xl font-black text-primary/30">
+                                        {freelancer.name.charAt(0)}
+                                    </div>
+                                )}
+                            </div>
+                            <div className="p-5 sm:p-8">
+                                <div className="flex items-start justify-between gap-3">
+                                    <div>
+                                        <h1 className="text-2xl font-bold text-gray-900">{freelancer.name}</h1>
+                                        <p className="font-medium text-primary">{freelancer.role}</p>
+                                    </div>
+                                    <span
+                                        className={cn(
+                                            "shrink-0 rounded-full px-3 py-1 text-xs font-bold",
+                                            freelancer.availability === "Available" ? "bg-green-100 text-green-800"
+                                                : freelancer.availability === "Busy" ? "bg-amber-100 text-amber-800"
+                                                    : "bg-gray-100 text-gray-700"
+                                        )}
+                                    >
+                                        {freelancer.availability}
+                                    </span>
                                 </div>
-                                <div className="flex-1">
-                                    <div className="flex items-start justify-between">
-                                        <div>
-                                            <h1 className="text-2xl font-bold text-gray-900">{freelancer.name}</h1>
-                                            <p className="text-primary font-medium">{freelancer.role}</p>
-                                        </div>
-                                        <div className="flex items-center bg-amber-50 px-3 py-1 rounded-full border border-amber-100">
-                                            <Star className="h-4 w-4 text-amber-500 fill-current mr-1" />
-                                            <span className="font-bold text-amber-700">{freelancer.rating}</span>
-                                            <span className="text-xs text-amber-600 ml-1">({freelancer.reviewCount})</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center text-gray-500 text-sm mt-2">
-                                        <MapPin className="h-4 w-4 mr-1" />
-                                        {freelancer.location}
-                                    </div>
-
-                                    <p className="mt-4 text-gray-600 leading-relaxed">
-                                        {freelancer.bio}
+                                {freelancer.location && (
+                                    <p className="mt-2 flex items-center text-sm text-gray-500">
+                                        <MapPin className="mr-1 h-4 w-4" /> {freelancer.location}
                                     </p>
-
-                                    <div className="mt-6">
-                                        <h3 className="text-sm font-semibold text-gray-900 mb-3 uppercase tracking-wider">Skills</h3>
-                                        <div className="flex flex-wrap gap-2">
-                                            {freelancer.skills.map((skill) => (
-                                                <span key={skill} className="px-3 py-1.5 rounded-lg bg-gray-100 text-sm text-gray-700 font-medium">
-                                                    {skill}
-                                                </span>
-                                            ))}
-                                        </div>
+                                )}
+                                {freelancer.bio && <p className="mt-4 leading-relaxed text-gray-600">{freelancer.bio}</p>}
+                                {freelancer.skills && freelancer.skills.length > 0 && freelancer.skills.some((s) => s !== "General") && (
+                                    <div className="mt-5 flex flex-wrap gap-2">
+                                        {freelancer.skills.map((s) => (
+                                            <span key={s} className="rounded-lg bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700">{s}</span>
+                                        ))}
                                     </div>
-                                </div>
+                                )}
                             </div>
                         </div>
 
-                        {/* Disclaimers Section */}
-                        <div className="bg-white rounded-2xl p-8 border shadow-sm space-y-6">
-                            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                                <Shield className="h-5 w-5 text-primary" />
-                                Important Disclaimers
+                        <div className="space-y-5 rounded-2xl border bg-white p-5 shadow-sm sm:p-8">
+                            <h3 className="flex items-center gap-2 text-lg font-bold text-gray-900">
+                                <Shield className="h-5 w-5 text-primary" /> Before you book
                             </h3>
-
-                            <div className="p-4 bg-orange-50 rounded-xl border border-orange-100">
-                                <h4 className="font-semibold text-orange-800 mb-2 text-sm flex items-center">
-                                    <Info className="h-4 w-4 mr-2" />
-                                    Health & Wellness Disclaimer
-                                </h4>
-                                <p className="text-sm text-orange-700/80">
-                                    Services are provided by independent freelancers. Clients must declare any accurate health conditions prior to booking. The platform is not liable for any health-related incidents.
-                                </p>
+                            <div className="space-y-3 text-sm text-gray-500">
+                                <p><strong>Independent providers:</strong> Services are delivered by independent providers. Please share accurate details about what you need.</p>
+                                <p><strong>Safety:</strong> Clients and providers agree to follow health and safety guidelines during the service.</p>
+                                <p><strong>Data privacy:</strong> Your personal information is used only for booking and communication.</p>
                             </div>
-
-                            <div className="text-sm text-gray-500 space-y-3">
-                                <p>
-                                    <strong>Worker & Client Safety:</strong> Both clients and freelancers agree to follow strict health and safety guidelines during the service.
-                                </p>
-                                <p>
-                                    <strong>Data Privacy:</strong> Personal information is used solely for booking and communication purposes in compliance with the Data Privacy Act.
-                                </p>
-                            </div>
-
-                            <div className="pt-6 border-t">
-                                <label className="flex items-start gap-3 cursor-pointer group">
-                                    <div className="relative flex items-center">
-                                        <input
-                                            type="checkbox"
-                                            checked={agreed}
-                                            onChange={(e) => setAgreed(e.target.checked)}
-                                            className="peer h-5 w-5 cursor-pointer appearance-none rounded-md border border-gray-300 transition-all checked:border-primary checked:bg-primary"
-                                        />
-                                        <CheckCircle2 className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-4 w-4 text-white opacity-0 peer-checked:opacity-100 transition-opacity" />
-                                    </div>
-                                    <span className="text-sm text-gray-700 group-hover:text-gray-900 transition-colors select-none">
-                                        I have read and agree to the <span className="font-semibold">Terms of Service</span>, <span className="font-semibold">Health Disclaimer</span>, and <span className="font-semibold">Privacy Policy</span>.
-                                    </span>
-                                </label>
-                            </div>
+                            <label className="group flex cursor-pointer items-start gap-3 border-t pt-5">
+                                <div className="relative flex shrink-0 items-center">
+                                    <input
+                                        type="checkbox"
+                                        checked={agreed}
+                                        onChange={(e) => setAgreed(e.target.checked)}
+                                        className="peer h-5 w-5 cursor-pointer appearance-none rounded-md border border-gray-300 transition-all checked:border-primary checked:bg-primary"
+                                    />
+                                    <CheckCircle2 className="pointer-events-none absolute left-1/2 top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 text-white opacity-0 transition-opacity peer-checked:opacity-100" />
+                                </div>
+                                <span className="select-none text-sm text-gray-700">
+                                    I have read and agree to the <span className="font-semibold">Terms of Service</span> and <span className="font-semibold">Privacy Policy</span>.
+                                </span>
+                            </label>
                         </div>
                     </div>
 
-                    {/* Sidebar Booking Card */}
-                    <div className="lg:col-span-1">
-                        <div className="bg-white rounded-2xl border shadow-lg p-6 sticky top-28">
-                            <div className="text-center pb-6 border-b mb-6">
-                                <span className="text-gray-500 text-sm uppercase font-semibold">Service Rate</span>
-                                <div className="flex items-end justify-center gap-1 mt-1">
-                                    <span className="text-4xl font-bold text-gray-900">₱{freelancer.rate}</span>
-                                    <span className="text-gray-500 mb-1.5">/{freelancer.rateUnit}</span>
-                                </div>
+                    {/* Desktop booking card */}
+                    <div className="hidden lg:col-span-1 lg:block">
+                        <div className="sticky top-28 rounded-2xl border bg-white p-6 shadow-lg">
+                            <div className="mb-6 border-b pb-6 text-center">
+                                <span className="text-sm font-semibold uppercase text-gray-500">Service Rate</span>
+                                <div className="mt-1 text-4xl font-bold text-gray-900">{formatRate(freelancer.rate, freelancer.rate_unit)}</div>
                             </div>
-
-                            <div className="space-y-4">
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-gray-500">Service Fee</span>
-                                    <span className="font-medium text-gray-900">₱0.00</span>
-                                </div>
-                                <div className="flex justify-between text-sm pt-2 border-t">
-                                    <span className="font-bold text-gray-900">Total</span>
-                                    <span className="font-bold text-primary">₱{freelancer.rate}</span>
-                                </div>
-                            </div>
-
-                            <button
-                                disabled={!agreed}
-                                onClick={() => setIsModalOpen(true)}
-                                className={cn(
-                                    "w-full mt-8 py-3.5 rounded-xl font-bold text-white shadow-lg transition-all",
-                                    agreed
-                                        ? "bg-primary hover:bg-violet-700 hover:shadow-primary/25 active:scale-95"
-                                        : "bg-gray-300 cursor-not-allowed"
-                                )}
-                            >
-                                {agreed ? "Book Now" : "Accept Terms to Book"}
-                            </button>
-
-                            <p className="text-xs text-center text-gray-400 mt-4">
-                                You won't be charged until you proceed to GCash payment.
-                            </p>
+                            {bookButton}
+                            <p className="mt-4 text-center text-xs text-gray-400">Pay via GCash/bank after filling in your details.</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <BookingModal
-                freelancer={freelancer}
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-            />
+            {/* Mobile sticky booking bar */}
+            <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-white p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_12px_rgba(0,0,0,0.06)] lg:hidden">
+                <div className="mx-auto flex max-w-md items-center gap-3">
+                    <div className="shrink-0">
+                        <span className="block text-[10px] font-semibold uppercase text-gray-400">Rate</span>
+                        <span className="text-lg font-black text-gray-900">{formatRate(freelancer.rate, freelancer.rate_unit)}</span>
+                    </div>
+                    {bookButton}
+                </div>
+            </div>
+
+            <BookingModal freelancer={freelancer} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
         </div>
     );
 }

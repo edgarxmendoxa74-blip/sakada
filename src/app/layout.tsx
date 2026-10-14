@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Outfit } from "next/font/google"; // Using Outfit for a premium, modern store feel
 import "./globals.css";
 import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import ChatButton from "@/components/ChatButton";
 import { supabase } from "@/lib/supabase";
 import { getSiteSettings } from "@/lib/settings";
 
@@ -11,6 +13,11 @@ const outfit = Outfit({
   display: "swap",
   weight: ["300", "400", "500", "600", "700", "800", "900"],
 });
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+};
 
 export const metadata: Metadata = {
   title: "Sakada Services | Services Booking Platform",
@@ -34,6 +41,8 @@ export default async function RootLayout({
           initialLogoUrl={settings?.logo_url || null}
         />
         <main className="flex-1">{children}</main>
+        <Footer logoUrl={settings?.logo_url || null} />
+        <ChatButton />
       </body>
     </html>
   );

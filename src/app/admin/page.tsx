@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Lock } from "lucide-react";
 
@@ -18,13 +18,17 @@ export default function AdminLogin() {
             localStorage.setItem("sakada_admin", "true");
             router.push("/admin/dashboard");
         } else {
-            setError("Invalid credentials. Try admin@sakada.com / admin123");
+            setError("Invalid email or password.");
         }
     };
 
+    useEffect(() => {
+        if (localStorage.getItem("sakada_admin")) router.replace("/admin/dashboard");
+    }, [router]);
+
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-2xl shadow-xl border">
+            <div className="max-w-md w-full space-y-8 bg-white p-6 sm:p-10 rounded-2xl shadow-xl border">
                 <div className="text-center">
                     <div className="mx-auto h-12 w-12 bg-gray-900 rounded-xl flex items-center justify-center text-white">
                         <Lock className="h-6 w-6" />
@@ -48,6 +52,7 @@ export default function AdminLogin() {
                                 type="email"
                                 required
                                 className="appearance-none rounded-xl relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-primary focus:border-primary focus:z-10 sm:text-sm"
+                                autoComplete="username"
                                 placeholder="Email address"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
@@ -63,6 +68,7 @@ export default function AdminLogin() {
                                 type="password"
                                 required
                                 className="appearance-none rounded-xl relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-primary focus:border-primary focus:z-10 sm:text-sm"
+                                autoComplete="current-password"
                                 placeholder="Password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}

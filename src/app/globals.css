@@ -25,6 +25,11 @@
   --color-destructive: hsl(var(--destructive));
   --color-destructive-foreground: hsl(var(--destructive-foreground));
 
+  --color-brand-navy: #1e3560;
+  --color-brand-orange: #d4702f;
+  --color-brand-green: #3b7a4a;
+  --color-brand-gray: #8a8a8a;
+
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
@@ -65,8 +70,8 @@
   --popover: 0 0% 100%;
   --popover-foreground: 260 10% 10%;
 
-  /* Vibrant Purple Primary */
-  --primary: 265 89% 66%;
+  /* Brand navy (from the logo) */
+  --primary: 219 53% 26%;
   --primary-foreground: 210 40% 98%;
 
   /* Cool Grays for Secondary */
@@ -85,7 +90,7 @@
   /* Visible Borders - Cool Gray */
   --border: 260 15% 85%;
   --input: 260 15% 85%;
-  --ring: 265 89% 66%;
+  --ring: 219 53% 26%;
 
   --radius: 0.75rem;
 }
@@ -120,6 +125,26 @@
   --border: 260 15% 25%;
   --input: 260 15% 25%;
   --ring: 265 89% 66%;
+}
+
+@layer utilities {
+  /* Navy hero with soft orange/green glows, matching the logo palette */
+  .bg-brand-hero {
+    background-color: #1e3560;
+    background-image:
+      radial-gradient(circle at 85% 15%, rgba(212, 112, 47, 0.35), transparent 45%),
+      radial-gradient(circle at 10% 90%, rgba(59, 122, 74, 0.35), transparent 45%),
+      linear-gradient(135deg, #14264a 0%, #1e3560 55%, #2c4c85 100%);
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 @layer base {

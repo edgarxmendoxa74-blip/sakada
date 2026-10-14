@@ -1,9 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import AdminSidebar from "@/components/AdminSidebar";
-import { Plus, Trash2, CreditCard, Layers, Image as ImageIcon, FileText, Upload, RefreshCw, QrCode } from "lucide-react";
+import { Plus, Trash2, CreditCard, Image as ImageIcon, FileText, Upload, RefreshCw, QrCode } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { uploadFile } from "@/lib/storage";
 import {
@@ -16,14 +14,7 @@ import {
 } from "@/lib/settings";
 
 export default function SettingsPage() {
-    const router = useRouter();
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isLoadingSettings, setIsLoadingSettings] = useState(true);
-
-    // Categories State
-    const [categories, setCategories] = useState<any[]>([]);
-    const [loadingCategories, setLoadingCategories] = useState(true);
-    const [newCategory, setNewCategory] = useState("");
 
     // Payment Options State
     const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
@@ -39,21 +30,7 @@ export default function SettingsPage() {
     const [logoFile, setLogoFile] = useState<File | null>(null);
 
     // About Us State
-
-    // About Us State
     const [aboutUsContent, setAboutUsContent] = useState("");
-
-    // Fetch Categories
-    const fetchCategories = async () => {
-        setLoadingCategories(true);
-        const { data, error } = await supabase
-            .from('categories')
-            .select('*')
-            .order('name', { ascending: true });
-
-        if (data) setCategories(data);
-        setLoadingCategories(false);
-    };
 
     // Fetch Site Settings & Payment Methods
     const fetchSettings = async () => {
@@ -74,43 +51,8 @@ export default function SettingsPage() {
     };
 
     useEffect(() => {
-        const auth = localStorage.getItem("sakada_admin");
-        if (!auth) {
-            router.push("/admin");
-        } else {
-            setIsAuthenticated(true);
-            fetchCategories();
-            fetchSettings();
-        }
-    }, [router]);
-
-    const handleAddCategory = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (newCategory.trim()) {
-            const slug = newCategory.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
-            const { error } = await supabase
-                .from('categories')
-                .insert([{ name: newCategory, slug }]);
-
-            if (!error) {
-                setNewCategory("");
-                fetchCategories();
-            } else {
-                alert("Error adding category. It might already exist.");
-            }
-        }
-    };
-
-    const handleDeleteCategory = async (id: string) => {
-        if (confirm("Delete this category?")) {
-            const { error } = await supabase
-                .from('categories')
-                .delete()
-                .eq('id', id);
-
-            if (!error) fetchCategories();
-        }
-    };
+        fetchSettings();
+    }, []);
 
     const handleAddPayment = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -220,13 +162,10 @@ export default function SettingsPage() {
         }
     };
 
-    if (!isAuthenticated) return null;
-
     return (
-        <div className="min-h-screen bg-gray-100 flex font-sans">
-            <AdminSidebar />
-            <main className="flex-1 overflow-auto">
-                <div className="p-8">
+        <div className="mx-auto max-w-6xl">
+            <div>
+                <div>
                     <div className="flex justify-between items-center mb-8">
                         <h2 className="text-2xl font-bold text-gray-900">Settings</h2>
                         {isLoadingSettings && (
@@ -240,14 +179,14 @@ export default function SettingsPage() {
                         {/* Site Identity & Content */}
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                             {/* Logo Manager */}
-                            <div className="bg-white rounded-xl shadow-sm border p-6">
+                            <div className="bg-white rounded-xl shadow-sm border p-4 sm:p-6">
                                 <div className="flex items-center gap-3 mb-6">
                                     <div className="p-3 bg-blue-100 text-blue-700 rounded-lg">
                                         <ImageIcon className="h-6 w-6" />
                                     </div>
                                     <h3 className="text-lg font-bold text-gray-900">Site Logo</h3>
                                 </div>
-                                <div className="flex items-center gap-6">
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
                                     <div className="w-24 h-24 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden border">
                                         {logoPreview ? (
                                             <img src={logoPreview} alt="Logo" className="w-full h-full object-cover" />
@@ -273,7 +212,7 @@ export default function SettingsPage() {
                             </div>
 
                             {/* About Us Editor */}
-                            <div className="bg-white rounded-xl shadow-sm border p-6">
+                            <div className="bg-white rounded-xl shadow-sm border p-4 sm:p-6">
                                 <div className="flex items-center gap-3 mb-6">
                                     <div className="p-3 bg-orange-100 text-orange-700 rounded-lg">
                                         <FileText className="h-6 w-6" />
@@ -298,51 +237,9 @@ export default function SettingsPage() {
                         </div>
 
                         {/* Existing Settings */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                            {/* Categories Management */}
-                            <div className="bg-white rounded-xl shadow-sm border p-6">
-                                <div className="flex items-center gap-3 mb-6">
-                                    <div className="p-3 bg-violet-100 text-primary rounded-lg">
-                                        <Layers className="h-6 w-6" />
-                                    </div>
-                                    <h3 className="text-lg font-bold text-gray-900">Service Categories</h3>
-                                </div>
-
-                                <form onSubmit={handleAddCategory} className="flex gap-2 mb-6">
-                                    <input
-                                        type="text"
-                                        placeholder="New Category Name..."
-                                        className="flex-1 border rounded-lg px-3 py-2 text-sm"
-                                        value={newCategory}
-                                        onChange={(e) => setNewCategory(e.target.value)}
-                                    />
-                                    <button type="submit" className="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800">
-                                        Add
-                                    </button>
-                                </form>
-
-                                {loadingCategories ? (
-                                    <div className="flex justify-center p-4"><RefreshCw className="animate-spin h-4 w-4" /></div>
-                                ) : (
-                                    <div className="space-y-2 max-h-64 overflow-y-auto">
-                                        {categories.map(cat => (
-                                            <div key={cat.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-100">
-                                                <span className="font-medium text-gray-700">{cat.name}</span>
-                                                <button
-                                                    onClick={() => handleDeleteCategory(cat.id)}
-                                                    className="text-gray-400 hover:text-red-600 transition-colors p-1"
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </button>
-                                            </div>
-                                        ))}
-                                        {categories.length === 0 && <p className="text-sm text-gray-400 text-center">No categories yet.</p>}
-                                    </div>
-                                )}
-                            </div>
-
+                        <div className="grid grid-cols-1 gap-8">
                             {/* Payment Options Management */}
-                            <div className="bg-white rounded-xl shadow-sm border p-6">
+                            <div className="bg-white rounded-xl shadow-sm border p-4 sm:p-6">
                                 <div className="flex items-center gap-3 mb-6">
                                     <div className="p-3 bg-green-100 text-green-700 rounded-lg">
                                         <CreditCard className="h-6 w-6" />
@@ -423,7 +320,7 @@ export default function SettingsPage() {
                         </div>
                     </div>
                 </div>
-            </main>
+            </div>
         </div>
     );
 }

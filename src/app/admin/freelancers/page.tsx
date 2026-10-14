@@ -1,15 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import AdminSidebar from "@/components/AdminSidebar";
-import { Plus, Edit, Trash2, Link as LinkIcon, RefreshCw } from "lucide-react";
+import { Plus, Edit, Trash2, RefreshCw, Search } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { uploadFile } from "@/lib/storage";
 
 export default function FreelancersPage() {
-    const router = useRouter();
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [search, setSearch] = useState("");
+    const [saving, setSaving] = useState(false);
     const [freelancerList, setFreelancerList] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -58,14 +56,8 @@ export default function FreelancersPage() {
     };
 
     useEffect(() => {
-        const auth = localStorage.getItem("sakada_admin");
-        if (!auth) {
-            router.push("/admin");
-        } else {
-            setIsAuthenticated(true);
-            fetchData();
-        }
-    }, [router]);
+        fetchData();
+    }, []);
 
     // 2. Delete Freelancer
     const handleDelete = async (id: string) => {
@@ -85,11 +77,12 @@ export default function FreelancersPage() {
 
     const handleEdit = (freelancer: any) => {
         setEditingFreelancer(freelancer);
+        setImageFile(null);
         setFormData({
             name: freelancer.name,
             role: freelancer.role,
-            rate: freelancer.rate.toString(),
-            rateUnit: freelancer.rate_unit,
+            rate: String(freelancer.rate ?? ""),
+            rateUnit: freelancer.rate_unit || "day",
             availability: freelancer.availability,
             location: freelancer.location,
             imageUrl: freelancer.image_url || "",
@@ -117,7 +110,7 @@ export default function FreelancersPage() {
     // 3. Submit (Add/Edit)
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log("Submitting freelancer form...", formData);
+        setSaving(true);
 
         let finalImageUrl = formData.imageUrl;
 
@@ -127,6 +120,7 @@ export default function FreelancersPage() {
             if (error) {
                 alert(`Error Uploading Image: ${error.message || JSON.stringify(error)}`);
                 console.error("Upload Error:", error);
+                setSaving(false);
                 return;
             }
             if (url) finalImageUrl = url;
@@ -162,24 +156,27 @@ export default function FreelancersPage() {
             resultError = error;
         }
 
+        setSaving(false);
         if (resultError) {
             alert(`Database Error: ${resultError.message}`);
             console.error("Database Error:", resultError);
         } else {
-            alert("Freelancer saved successfully!");
             fetchData();
             setIsModalOpen(false);
         }
     };
 
-    if (!isAuthenticated) return null;
+    const q = search.trim().toLowerCase();
+    const filteredList = q
+        ? freelancerList.filter((f) => [f.name, f.role, f.location].some((v) => (v || "").toLowerCase().includes(q)))
+        : freelancerList;
 
     return (
-        <div className="min-h-screen bg-gray-100 flex font-sans">
+        <div className="mx-auto max-w-6xl">
             {/* Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                    <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
+                <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm sm:p-4">
+                    <div className="bg-white rounded-t-3xl sm:rounded-xl shadow-xl w-full max-w-md p-5 sm:p-6 max-h-[92dvh] overflow-y-auto">
                         <h2 className="text-xl font-bold mb-4">{editingFreelancer ? 'Edit Freelancer' : 'Add New Freelancer'}</h2>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             {/* Image Upload */}
@@ -293,96 +290,124 @@ export default function FreelancersPage() {
 
                             <div className="flex justify-end gap-3 mt-6">
                                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button>
-                                <button type="submit" className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800">Save Changes</button>
+                                <button type="submit" disabled={saving} className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 disabled:opacity-60">{saving ? "Saving..." : "Save Changes"}</button>
                             </div>
                         </form>
                     </div>
                 </div>
             )}
 
-            <AdminSidebar />
-            <main className="flex-1 overflow-auto">
-                <div className="p-8">
-                    <div className="flex justify-between items-center mb-8">
-                        <h2 className="text-2xl font-bold text-gray-900">Manage Freelancers</h2>
-                        <button
-                            onClick={handleAdd}
-                            className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg font-medium hover:bg-violet-700 transition-colors shadow-lg shadow-primary/20"
-                        >
-                            <Plus className="h-4 w-4" />
-                            Add Freelancer
-                        </button>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">Manage Providers</h2>
+                <button
+                    onClick={handleAdd}
+                    className="flex items-center justify-center gap-2 bg-primary text-white px-4 py-2.5 rounded-lg font-medium hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20"
+                >
+                    <Plus className="h-4 w-4" /> Add Provider
+                </button>
+            </div>
+
+            <div className="relative mb-4">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <input
+                    type="search"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Search name, category or location..."
+                    className="w-full rounded-xl border bg-white py-2.5 pl-10 pr-3 text-base focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+            </div>
+
+            {loading ? (
+                <div className="p-8 text-center text-gray-500 flex items-center justify-center gap-2 bg-white rounded-xl border">
+                    <RefreshCw className="animate-spin h-5 w-5" /> Loading providers...
+                </div>
+            ) : filteredList.length === 0 ? (
+                <div className="p-10 text-center text-sm text-gray-400 bg-white rounded-xl border">No providers found.</div>
+            ) : (
+                <>
+                    {/* Mobile: cards */}
+                    <div className="space-y-3 md:hidden">
+                        {filteredList.map((f) => (
+                            <div key={f.id} className="bg-white rounded-xl border p-4 shadow-sm">
+                                <div className="flex items-center gap-3">
+                                    <div className="h-12 w-12 rounded-full bg-gray-200 overflow-hidden shrink-0">
+                                        {f.image_url ? (
+                                            // eslint-disable-next-line @next/next/no-img-element
+                                            <img src={f.image_url} alt={f.name} className="h-full w-full object-cover" />
+                                        ) : (
+                                            <div className="h-full w-full bg-primary/10 flex items-center justify-center text-primary font-bold">{f.name.charAt(0)}</div>
+                                        )}
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="font-semibold text-gray-900 truncate">{f.name}</p>
+                                        <p className="text-xs text-gray-500 truncate">{f.role}</p>
+                                    </div>
+                                    <AvailabilityBadge value={f.availability} />
+                                </div>
+                                <div className="mt-3 flex items-center justify-between border-t pt-3">
+                                    <span className="font-bold text-gray-900">₱{f.rate}/{f.rate_unit}</span>
+                                    <div className="flex gap-1">
+                                        <button onClick={() => handleEdit(f)} aria-label="Edit" className="p-2 text-gray-500 hover:text-blue-600"><Edit className="h-4 w-4" /></button>
+                                        <button onClick={() => handleDelete(f.id)} aria-label="Delete" className="p-2 text-gray-500 hover:text-red-600"><Trash2 className="h-4 w-4" /></button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
                     </div>
 
-                    <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-                        {loading ? (
-                            <div className="p-8 text-center text-gray-500 flex items-center justify-center gap-2">
-                                <RefreshCw className="animate-spin h-5 w-5" /> Loading freelancers...
-                            </div>
-                        ) : (
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-left text-sm text-gray-600">
-                                    <thead className="bg-gray-50 text-xs uppercase font-medium text-gray-500">
-                                        <tr>
-                                            <th className="px-6 py-4">Freelancer</th>
-                                            <th className="px-6 py-4">Role</th>
-                                            <th className="px-6 py-4">Rate</th>
-                                            <th className="px-6 py-4">Status</th>
-                                            <th className="px-6 py-4 text-right">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-100">
-                                        {freelancerList.map((f) => (
-                                            <tr key={f.id} className="hover:bg-gray-50 transition-colors">
-                                                <td className="px-6 py-4">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="h-10 w-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
-                                                            {f.image_url ? (
-                                                                <img src={f.image_url} alt={f.name} className="h-full w-full object-cover" />
-                                                            ) : (
-                                                                <div className="h-full w-full bg-primary/10 flex items-center justify-center text-primary font-bold">
-                                                                    {f.name.charAt(0)}
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                        <span className="font-medium text-gray-900">{f.name}</span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4">{f.role}</td>
-                                                <td className="px-6 py-4">₱{f.rate}/{f.rate_unit}</td>
-                                                <td className="px-6 py-4">
-                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                                        ${f.availability === 'Available' ? 'bg-green-100 text-green-800' :
-                                                            f.availability === 'Busy' ? 'bg-amber-100 text-amber-800' :
-                                                                'bg-gray-100 text-gray-800'}`}>
-                                                        {f.availability}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 text-right">
-                                                    <div className="flex items-center justify-end gap-2">
-                                                        <button
-                                                            onClick={() => handleEdit(f)}
-                                                            className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
-                                                        >
-                                                            <Edit className="h-4 w-4" />
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleDelete(f.id)}
-                                                            className="p-2 text-gray-400 hover:text-red-600 transition-colors"
-                                                        >
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
+                    {/* Desktop: table */}
+                    <div className="hidden md:block bg-white rounded-xl shadow-sm border overflow-hidden">
+                        <table className="w-full text-left text-sm text-gray-600">
+                            <thead className="bg-gray-50 text-xs uppercase font-medium text-gray-500">
+                                <tr>
+                                    <th className="px-6 py-4">Provider</th>
+                                    <th className="px-6 py-4">Category</th>
+                                    <th className="px-6 py-4">Rate</th>
+                                    <th className="px-6 py-4">Status</th>
+                                    <th className="px-6 py-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                                {filteredList.map((f) => (
+                                    <tr key={f.id} className="hover:bg-gray-50 transition-colors">
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="h-10 w-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+                                                    {f.image_url ? (
+                                                        // eslint-disable-next-line @next/next/no-img-element
+                                                        <img src={f.image_url} alt={f.name} className="h-full w-full object-cover" />
+                                                    ) : (
+                                                        <div className="h-full w-full bg-primary/10 flex items-center justify-center text-primary font-bold">{f.name.charAt(0)}</div>
+                                                    )}
+                                                </div>
+                                                <span className="font-medium text-gray-900">{f.name}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">{f.role}</td>
+                                        <td className="px-6 py-4">₱{f.rate}/{f.rate_unit}</td>
+                                        <td className="px-6 py-4"><AvailabilityBadge value={f.availability} /></td>
+                                        <td className="px-6 py-4 text-right">
+                                            <div className="flex items-center justify-end gap-2">
+                                                <button onClick={() => handleEdit(f)} aria-label="Edit" className="p-2 text-gray-400 hover:text-blue-600 transition-colors"><Edit className="h-4 w-4" /></button>
+                                                <button onClick={() => handleDelete(f.id)} aria-label="Delete" className="p-2 text-gray-400 hover:text-red-600 transition-colors"><Trash2 className="h-4 w-4" /></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
-                </div>
-            </main>
+                </>
+            )}
         </div>
     );
+}
+
+function AvailabilityBadge({ value }: { value: string }) {
+    const cls =
+        value === "Available" ? "bg-green-100 text-green-800" :
+            value === "Busy" ? "bg-amber-100 text-amber-800" :
+                "bg-gray-100 text-gray-800";
+    return <span className={`inline-flex shrink-0 items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${cls}`}>{value}</span>;
 }

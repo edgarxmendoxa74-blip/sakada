@@ -80,3 +80,68 @@ create table if not exists freelancers (
 -- Enable RLS logic relative to freelancers if needed
 -- For now, just ensuring the column exists
 -- ALTER TABLE freelancers ADD COLUMN IF NOT EXISTS bio text;
+
+
+-- ---------------------------------------------------------------
+-- Categories (service categories shown on the site)
+-- ---------------------------------------------------------------
+create table if not exists categories (
+  id uuid default gen_random_uuid() primary key,
+  name text not null,
+  slug text not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Seed default categories (only the ones that don't exist yet)
+insert into categories (name, slug)
+select v.name, v.slug
+from (values
+  ('Hotel Services', 'hotel-services'),
+  ('Restaurant Services', 'restaurant-services'),
+  ('Health, Wellness & Beauty', 'health-wellness-beauty'),
+  ('Transportation / Delivery', 'transportation-delivery'),
+  ('Maintenance Services', 'maintenance-services'),
+  ('Building / House Services', 'building-house-services'),
+  ('Tutorial Services', 'tutorial-services'),
+  ('Legal & Documentation', 'legal-documentation')
+) as v(name, slug)
+where not exists (select 1 from categories c where c.slug = v.slug);
+
+-- ---------------------------------------------------------------
+-- Bookings (created from the booking modal, managed in /admin/bookings)
+-- ---------------------------------------------------------------
+create table if not exists bookings (
+  id uuid default gen_random_uuid() primary key,
+  freelancer_id uuid,
+  freelancer_name text not null,
+  category text,
+  client_name text not null,
+  client_phone text not null,
+  description text,
+  preferred_date date,
+  amount numeric,
+  status text not null default 'pending'
+    check (status in ('pending', 'confirmed', 'completed', 'cancelled')),
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Note: like the tables above, RLS is not enabled, so the anon key can read/write.
+-- Enable RLS and add proper policies before going to production.
+
+-- ---------------------------------------------------------------
+-- Bookings: upgrade an older bookings table that is missing columns
+-- (safe to re-run; does nothing for columns that already exist)
+-- ---------------------------------------------------------------
+alter table bookings add column if not exists freelancer_id uuid;
+alter table bookings add column if not exists freelancer_name text;
+alter table bookings add column if not exists category text;
+alter table bookings add column if not exists client_name text;
+alter table bookings add column if not exists client_phone text;
+alter table bookings add column if not exists description text;
+alter table bookings add column if not exists preferred_date date;
+alter table bookings add column if not exists amount numeric;
+alter table bookings add column if not exists status text not null default 'pending';
+alter table bookings add column if not exists created_at timestamp with time zone default timezone('utc'::text, now()) not null;
+
+-- Make Supabase's API pick up the new columns immediately
+notify pgrst, 'reload schema';
