@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Copy, Check, MessageCircle, CreditCard, X, ChevronRight, FileText } from "lucide-react";
+import { Copy, Check, MessageCircle, CreditCard, X, ChevronRight, FileText, QrCode } from "lucide-react";
 import { type Freelancer, formatRate } from "@/lib/types";
 import { getPaymentMethods, type PaymentMethod } from "@/lib/settings";
 import { supabase } from "@/lib/supabase";
@@ -23,6 +23,11 @@ export default function BookingModal({ freelancer, isOpen, onClose }: BookingMod
 
     const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
     const [loadingMethods, setLoadingMethods] = useState(false);
+    const [expandedQrs, setExpandedQrs] = useState<Record<string, boolean>>({});
+
+    const toggleQr = (key: string) => {
+        setExpandedQrs((prev) => ({ ...prev, [key]: !prev[key] }));
+    };
 
     useEffect(() => {
         if (isOpen && step === 2) {
@@ -39,6 +44,7 @@ export default function BookingModal({ freelancer, isOpen, onClose }: BookingMod
         if (!isOpen) {
             setStep(1);
             setError("");
+            setExpandedQrs({});
             return;
         }
         const prev = document.body.style.overflow;
@@ -206,28 +212,54 @@ export default function BookingModal({ freelancer, isOpen, onClose }: BookingMod
                             ) : (
                                 <div className="space-y-3">
                                     <p className="text-sm font-bold text-gray-900">Pay using any of these</p>
-                                    {paymentMethods.map((method) => (
-                                        <div key={method.id} className="rounded-xl border bg-white p-4 shadow-sm">
-                                            <div className="flex items-center gap-3">
-                                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-100">
-                                                    <CreditCard className="h-5 w-5 text-gray-500" />
+                                    {paymentMethods.map((method) => {
+                                        const key = method.id || method.name;
+                                        const isQrOpen = !!expandedQrs[key];
+
+                                        return (
+                                            <div key={key} className="rounded-xl border bg-white p-4 shadow-sm">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-100">
+                                                        <CreditCard className="h-5 w-5 text-gray-500" />
+                                                    </div>
+                                                    <div className="min-w-0 flex-1">
+                                                        <h4 className="truncate text-sm font-bold text-gray-900">{method.name}</h4>
+                                                        <p className="font-mono text-sm text-gray-600">{method.account_number}</p>
+                                                    </div>
+                                                    <button onClick={() => handleCopy(key, method.account_number)} className="p-2 text-gray-400 hover:text-primary" aria-label="Copy number">
+                                                        {copiedId === key ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                                                    </button>
                                                 </div>
-                                                <div className="min-w-0 flex-1">
-                                                    <h4 className="truncate text-sm font-bold text-gray-900">{method.name}</h4>
-                                                    <p className="font-mono text-sm text-gray-600">{method.account_number}</p>
-                                                </div>
-                                                <button onClick={() => handleCopy(method.id || method.name, method.account_number)} className="p-2 text-gray-400 hover:text-primary" aria-label="Copy number">
-                                                    {copiedId === (method.id || method.name) ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-                                                </button>
+
+                                                {method.qr_code_url && (
+                                                    <div className="mt-3 border-t border-gray-100 pt-2.5">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => toggleQr(key)}
+                                                            className="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-200 bg-gray-50 py-2 text-xs font-bold text-gray-700 hover:bg-gray-100 transition-colors active:scale-98"
+                                                        >
+                                                            <QrCode className="h-4 w-4 text-brand-orange" />
+                                                            <span>{isQrOpen ? "Hide QR Code" : "Show QR Code"}</span>
+                                                        </button>
+
+                                                        {isQrOpen && (
+                                                            <div className="mt-3 flex flex-col items-center justify-center rounded-xl bg-gray-50 p-4 border border-gray-100 animate-in fade-in duration-200">
+                                                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                                <img
+                                                                    src={method.qr_code_url}
+                                                                    alt={`${method.name} QR Code`}
+                                                                    className="h-48 w-48 rounded-xl object-contain bg-white p-2 shadow-sm border border-gray-200"
+                                                                />
+                                                                <p className="mt-2 text-xs text-gray-500 font-medium text-center">
+                                                                    Scan this QR code using your {method.name} app
+                                                                </p>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </div>
-                                            {method.qr_code_url && (
-                                                <div className="mt-3 flex justify-center rounded-lg bg-gray-50 p-3">
-                                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                    <img src={method.qr_code_url} alt="QR Code" className="h-40 w-40 object-contain" />
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                     <div className="rounded-lg border border-yellow-100 bg-yellow-50 p-3 text-xs text-yellow-800">
                                         ⚠️ Please include your name ({details.name}) in the payment reference.
                                     </div>
