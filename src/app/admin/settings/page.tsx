@@ -28,6 +28,8 @@ export default function SettingsPage() {
     // Site Identity State
     const [logoPreview, setLogoPreview] = useState<string | null>(null);
     const [logoFile, setLogoFile] = useState<File | null>(null);
+    const [isSavingLogo, setIsSavingLogo] = useState(false);
+    const [logoMessage, setLogoMessage] = useState<{ text: string; error?: boolean } | null>(null);
 
     // About Us State
     const [aboutUsContent, setAboutUsContent] = useState("");
@@ -119,24 +121,40 @@ export default function SettingsPage() {
     const handleSaveLogo = async () => {
         if (!logoPreview && !logoFile) return;
 
-        let finalLogoUrl = logoPreview;
+        setIsSavingLogo(true);
+        setLogoMessage(null);
 
-        if (logoFile) {
-            const { url, error } = await uploadFile(logoFile, 'uploads', 'site-assets');
-            if (error) {
-                alert("Failed to upload logo. Please ensure 'uploads' bucket exists and is public.");
-                console.error(error);
-                return;
+        try {
+            let finalLogoUrl = logoPreview;
+
+            if (logoFile) {
+                const { url, error } = await uploadFile(logoFile, 'uploads', 'site-assets');
+                if (error) {
+                    const msg = "Failed to upload logo to storage: " + (error.message || JSON.stringify(error));
+                    setLogoMessage({ text: msg, error: true });
+                    setIsSavingLogo(false);
+                    return;
+                }
+                if (url) finalLogoUrl = url;
             }
-            finalLogoUrl = url;
-        }
 
-        const { error } = await saveSiteSettings({ logo_url: finalLogoUrl });
-        if (!error) {
-            alert("Logo saved successfully!");
-            setLogoFile(null);
+            const { error } = await saveSiteSettings({ logo_url: finalLogoUrl });
+            if (!error) {
+                setLogoMessage({ text: "Logo saved! Updated header and footer immediately.", error: false });
+                setLogoFile(null);
+                if (finalLogoUrl) {
+                    setLogoPreview(finalLogoUrl);
+                    localStorage.setItem("sakada_logo_url", finalLogoUrl);
+                    window.dispatchEvent(new CustomEvent("sakada:logo-updated", { detail: finalLogoUrl }));
+                }
+            } else {
+                setLogoMessage({ text: "Database error saving logo: " + error.message, error: true });
+            }
+        } catch (err: any) {
+            setLogoMessage({ text: "Error: " + (err?.message || "Failed to save logo"), error: true });
+        } finally {
+            setIsSavingLogo(false);
         }
-        else alert("Failed to save logo.");
     };
 
     const handleSaveAboutUs = async () => {
@@ -194,19 +212,40 @@ export default function SettingsPage() {
                                             <span className="text-xs text-gray-400 font-bold">SAKADA</span>
                                         )}
                                     </div>
-                                    <div>
-                                        <label className="cursor-pointer bg-white border border-gray-300 py-2 px-4 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2 mb-2">
-                                            <Upload className="h-4 w-4" />
-                                            Upload New Logo
-                                            <input type="file" className="hidden" accept="image/*" onChange={handleLogoChange} />
-                                        </label>
-                                        <p className="text-xs text-gray-400 mb-2">Recommended size: 512x512 (Max 5MB)</p>
-                                        <button
-                                            onClick={handleSaveLogo}
-                                            className="text-xs text-primary font-bold hover:underline"
-                                        >
-                                            Save Logo
-                                        </button>
+                                    <div className="flex-1">
+                                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                                            <label className="cursor-pointer bg-white border border-gray-300 py-2 px-4 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2 shadow-xs">
+                                                <Upload className="h-4 w-4" />
+                                                Choose Image
+                                                <input type="file" className="hidden" accept="image/*" onChange={handleLogoChange} />
+                                            </label>
+                                            <button
+                                                type="button"
+                                                onClick={handleSaveLogo}
+                                                disabled={isSavingLogo || (!logoFile && !logoPreview)}
+                                                className="bg-brand-navy hover:bg-brand-navy/90 text-white text-sm font-bold py-2 px-4 rounded-lg transition-colors shadow-xs disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                            >
+                                                {isSavingLogo ? (
+                                                    <>
+                                                        <RefreshCw className="h-4 w-4 animate-spin" />
+                                                        Saving...
+                                                    </>
+                                                ) : (
+                                                    "Save Logo"
+                                                )}
+                                            </button>
+                                        </div>
+                                        {logoFile && (
+                                            <p className="text-xs text-blue-600 font-medium mb-1 truncate max-w-xs">
+                                                Selected: {logoFile.name} (Click &apos;Save Logo&apos; to apply)
+                                            </p>
+                                        )}
+                                        <p className="text-xs text-gray-400 mb-2">Recommended: PNG / JPG, square aspect ratio (Max 5MB)</p>
+                                        {logoMessage && (
+                                            <div className={`text-xs p-2 rounded-lg font-medium ${logoMessage.error ? "bg-red-50 text-red-600" : "bg-green-50 text-green-700"}`}>
+                                                {logoMessage.text}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>

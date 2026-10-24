@@ -154,7 +154,7 @@ export default function FreelancerPage() {
                         <div className="sticky top-28 rounded-2xl border bg-white p-6 shadow-lg">
                             <div className="mb-6 border-b pb-6 text-center">
                                 <span className="text-sm font-semibold uppercase text-gray-500">Service Rate</span>
-                                <div className="mt-1 text-4xl font-bold text-gray-900">{formatRate(freelancer.rate, freelancer.rate_unit)}</div>
+                                <div className="mt-1 text-4xl font-black text-emerald-600">{formatRate(freelancer.rate, freelancer.rate_unit)}</div>
                             </div>
                             {bookButton}
                             <p className="mt-4 text-center text-xs text-gray-400">Pay via GCash/bank after filling in your details.</p>
@@ -168,7 +168,7 @@ export default function FreelancerPage() {
                 <div className="mx-auto flex max-w-md items-center gap-3">
                     <div className="shrink-0">
                         <span className="block text-[10px] font-semibold uppercase text-gray-400">Rate</span>
-                        <span className="text-lg font-black text-gray-900">{formatRate(freelancer.rate, freelancer.rate_unit)}</span>
+                        <span className="text-lg font-black text-emerald-600">{formatRate(freelancer.rate, freelancer.rate_unit)}</span>
                     </div>
                     {bookButton}
                 </div>

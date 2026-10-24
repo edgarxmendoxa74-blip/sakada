@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Copy, Check, MessageCircle, CreditCard, X, ChevronRight } from "lucide-react";
+import { Copy, Check, MessageCircle, CreditCard, X, ChevronRight, FileText } from "lucide-react";
 import { type Freelancer, formatRate } from "@/lib/types";
 import { getPaymentMethods, type PaymentMethod } from "@/lib/settings";
 import { supabase } from "@/lib/supabase";
@@ -92,8 +92,10 @@ export default function BookingModal({ freelancer, isOpen, onClose }: BookingMod
 
     const handleMessengerRedirect = () => {
         const text =
-            `Hi, I'm ${details.name}. I'd like to book ${freelancer.name} (${freelancer.role}).\n\n` +
-            `Preferred date: ${details.date || "Any"}\nDetails: ${details.description}\nContact: ${details.phone}\n\n` +
+            `Hi, I'm ${details.name}. I'd like to book ${freelancer.name} for ${freelancer.role}.\n` +
+            (freelancer.bio ? `Service Details: ${freelancer.bio.replace(/\n+/g, ' ')}\n` : '') +
+            `Rate: ${formatRate(freelancer.rate, freelancer.rate_unit)}\n` +
+            `Preferred date: ${details.date || "Any"}\nMy Needs: ${details.description}\nContact: ${details.phone}\n\n` +
             `I have sent the payment.`;
         window.open(`https://m.me/61580883685679?text=${encodeURIComponent(text)}`, "_blank");
         setDetails(EMPTY_DETAILS);
@@ -126,8 +128,9 @@ export default function BookingModal({ freelancer, isOpen, onClose }: BookingMod
                 <div className="overflow-y-auto p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
                     {step === 1 && (
                         <div className="space-y-4">
-                            <div className="flex items-center gap-3 rounded-xl bg-blue-50 p-3">
-                                <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-blue-100 font-bold text-primary">
+                            {/* Provider Header Box */}
+                            <div className="flex items-center gap-3 rounded-xl bg-blue-50/70 p-3 border border-blue-100/60">
+                                <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-blue-100 font-bold text-primary">
                                     {freelancer.image_url ? (
                                         // eslint-disable-next-line @next/next/no-img-element
                                         <img src={freelancer.image_url} alt="" className="h-full w-full object-cover" />
@@ -135,13 +138,29 @@ export default function BookingModal({ freelancer, isOpen, onClose }: BookingMod
                                         freelancer.name.charAt(0)
                                     )}
                                 </div>
-                                <div className="min-w-0">
+                                <div className="min-w-0 flex-1">
                                     <p className="truncate text-sm font-bold text-gray-900">{freelancer.name}</p>
-                                    <p className="truncate text-xs text-gray-500">
-                                        {freelancer.role} • {formatRate(freelancer.rate, freelancer.rate_unit)}
-                                    </p>
+                                    <p className="truncate text-xs font-semibold text-brand-orange">{freelancer.role}</p>
+                                </div>
+                                <div className="text-right shrink-0">
+                                    <span className="block text-sm font-black text-emerald-600">
+                                        {formatRate(freelancer.rate, freelancer.rate_unit)}
+                                    </span>
                                 </div>
                             </div>
+
+                            {/* Service Menu Description & Inclusions Display */}
+                            {freelancer.bio && (
+                                <div className="rounded-xl border border-orange-100 bg-orange-50/50 p-3.5 shadow-xs">
+                                    <div className="mb-1.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-brand-navy">
+                                        <FileText className="h-3.5 w-3.5 text-brand-orange shrink-0" />
+                                        <span>Service Description & Inclusions</span>
+                                    </div>
+                                    <p className="whitespace-pre-line text-xs leading-relaxed text-gray-700">
+                                        {freelancer.bio}
+                                    </p>
+                                </div>
+                            )}
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700">Full Name</label>
@@ -157,7 +176,7 @@ export default function BookingModal({ freelancer, isOpen, onClose }: BookingMod
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700">What do you need?</label>
-                                <textarea className={inputClass} rows={3} placeholder="Briefly describe the service and your address/location..." value={details.description} onChange={(e) => setDetails({ ...details, description: e.target.value })} />
+                                <textarea className={inputClass} rows={3} placeholder="Describe your exact request and address / location..." value={details.description} onChange={(e) => setDetails({ ...details, description: e.target.value })} />
                             </div>
 
                             {error && <p className="rounded-lg bg-red-50 p-2 text-center text-sm font-medium text-red-600">{error}</p>}
@@ -171,8 +190,11 @@ export default function BookingModal({ freelancer, isOpen, onClose }: BookingMod
                     {step === 2 && (
                         <div className="space-y-5">
                             <div className="rounded-xl border border-blue-100 bg-blue-50 p-4 text-center">
-                                <p className="mb-1 text-sm text-blue-900">Amount to Transfer</p>
-                                <p className="text-3xl font-bold text-blue-950">₱{Number(freelancer.rate).toLocaleString("en-PH")}</p>
+                                <p className="mb-0.5 text-xs font-semibold text-blue-900">
+                                    {freelancer.name} • {freelancer.role}
+                                </p>
+                                <p className="mb-1 text-sm text-blue-900 font-medium">Amount to Transfer</p>
+                                <p className="text-3xl font-black text-emerald-600">₱{Number(freelancer.rate).toLocaleString("en-PH")}</p>
                             </div>
 
                             {loadingMethods ? (

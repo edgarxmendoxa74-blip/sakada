@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { MapPin, Phone } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { supabase } from "@/lib/supabase";
 
 // Logo palette: navy, orange, gray, green
 const NAVY = "#1e3560";
@@ -10,8 +12,50 @@ const ORANGE = "#d4702f";
 const GRAY = "#8a8a8a";
 const GREEN = "#3b7a4a";
 
-export default function Footer({ logoUrl = null }: { logoUrl?: string | null }) {
+export default function Footer({ logoUrl: initialLogoUrl = null }: { logoUrl?: string | null }) {
     const pathname = usePathname();
+    const [logoUrl, setLogoUrl] = useState<string | null>(initialLogoUrl);
+    const [imageError, setImageError] = useState(false);
+
+    const fetchLatestLogo = useCallback(async () => {
+        try {
+            const cached = localStorage.getItem("sakada_logo_url");
+            if (cached) {
+                setLogoUrl(cached);
+                setImageError(false);
+            }
+            const { data, error } = await supabase
+                .from("site_settings")
+                .select("logo_url")
+                .eq("id", 1)
+                .single();
+
+            if (!error && data?.logo_url) {
+                setLogoUrl(data.logo_url);
+                setImageError(false);
+                localStorage.setItem("sakada_logo_url", data.logo_url);
+            }
+        } catch (err) {
+            console.error("Error fetching footer logo:", err);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchLatestLogo();
+        const handleLogoUpdate = (e: any) => {
+            const newUrl = e.detail !== undefined ? e.detail : localStorage.getItem("sakada_logo_url");
+            setLogoUrl(newUrl || null);
+            setImageError(false);
+        };
+
+        window.addEventListener("sakada:logo-updated", handleLogoUpdate);
+        window.addEventListener("storage", handleLogoUpdate);
+        return () => {
+            window.removeEventListener("sakada:logo-updated", handleLogoUpdate);
+            window.removeEventListener("storage", handleLogoUpdate);
+        };
+    }, [fetchLatestLogo]);
+
     if (pathname?.startsWith("/admin")) return null;
 
     return (
@@ -25,9 +69,14 @@ export default function Footer({ logoUrl = null }: { logoUrl?: string | null }) 
 
             <div className="container mx-auto flex flex-col items-center gap-4 px-4 py-5 text-center md:flex-row md:justify-between md:text-left">
                 <Link href="/" className="flex items-center gap-3">
-                    {logoUrl ? (
+                    {logoUrl && !imageError ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={logoUrl} alt="Sakada Services Logo" className="h-11 w-11 rounded-xl object-cover ring-2 ring-white/20" />
+                        <img
+                            src={logoUrl}
+                            alt="Sakada Services Logo"
+                            onError={() => setImageError(true)}
+                            className="h-11 w-11 rounded-xl object-cover ring-2 ring-white/20"
+                        />
                     ) : (
                         <div className="flex h-11 w-11 items-center justify-center rounded-xl text-lg font-black" style={{ backgroundColor: ORANGE }}>S</div>
                     )}

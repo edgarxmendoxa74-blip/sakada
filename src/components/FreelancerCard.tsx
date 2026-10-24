@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MapPin } from "lucide-react";
+import { MapPin, FileText } from "lucide-react";
 import { type Freelancer, formatRate } from "@/lib/types";
 
 interface FreelancerCardProps {
@@ -11,7 +11,7 @@ export default function FreelancerCard({ freelancer, onBook }: FreelancerCardPro
     const available = freelancer.availability === "Available";
 
     return (
-        <div className="group flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-all hover:shadow-lg">
+        <div className="group flex h-full flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-all hover:shadow-lg">
             <Link href={`/freelancer/${freelancer.id}`} className="relative block aspect-[4/3] w-full overflow-hidden bg-gray-100">
                 {freelancer.image_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -22,8 +22,9 @@ export default function FreelancerCard({ freelancer, onBook }: FreelancerCardPro
                     </div>
                 )}
                 <span
-                    className={`absolute left-3 top-3 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm ${available ? "bg-green-500" : freelancer.availability === "Busy" ? "bg-amber-500" : "bg-gray-500"
-                        }`}
+                    className={`absolute left-3 top-3 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm ${
+                        available ? "bg-green-500" : freelancer.availability === "Busy" ? "bg-amber-500" : "bg-gray-500"
+                    }`}
                 >
                     {available ? "Available" : freelancer.availability}
                 </span>
@@ -31,33 +32,47 @@ export default function FreelancerCard({ freelancer, onBook }: FreelancerCardPro
 
             <div className="flex flex-1 flex-col p-4">
                 <Link href={`/freelancer/${freelancer.id}`}>
-                    <h3 className="text-base font-bold leading-tight text-gray-900 sm:text-lg">{freelancer.name}</h3>
+                    <h3 className="text-base font-bold leading-tight text-gray-900 transition-colors group-hover:text-brand-navy sm:text-lg">
+                        {freelancer.name}
+                    </h3>
                 </Link>
-                <p className="truncate text-sm font-medium text-primary">{freelancer.role}</p>
+                <p className="truncate text-sm font-semibold text-brand-orange">{freelancer.role}</p>
                 {freelancer.location && (
                     <p className="mt-1 flex items-center gap-1 text-xs text-gray-400">
                         <MapPin className="h-3 w-3 shrink-0" /> {freelancer.location}
                     </p>
                 )}
-                {freelancer.bio && <p className="mt-2 line-clamp-2 text-xs text-gray-500">{freelancer.bio}</p>}
+
+                {/* Service Menu Offer Description */}
+                {freelancer.bio && (
+                    <div className="mt-3 rounded-xl border border-gray-100 bg-gray-50/80 p-2.5 text-xs">
+                        <div className="mb-0.5 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                            <FileText className="h-3 w-3 text-brand-orange shrink-0" />
+                            <span>Description / Inclusions:</span>
+                        </div>
+                        <p className="line-clamp-3 whitespace-pre-line text-[11px] leading-relaxed text-gray-600">
+                            {freelancer.bio}
+                        </p>
+                    </div>
+                )}
 
                 <div className="mt-auto flex items-center justify-between gap-2 pt-4">
                     <div>
                         <span className="block text-[10px] font-semibold uppercase text-gray-400">Starting at</span>
-                        <span className="text-lg font-black text-gray-900">{formatRate(freelancer.rate, freelancer.rate_unit)}</span>
+                        <span className="text-lg font-black text-emerald-600">{formatRate(freelancer.rate, freelancer.rate_unit)}</span>
                     </div>
                     {onBook ? (
                         <button
                             onClick={() => onBook(freelancer)}
                             disabled={freelancer.availability === "Offline"}
-                            className="rounded-full bg-gray-900 px-5 py-2.5 text-xs font-bold uppercase tracking-wide text-white transition-all active:scale-95 hover:bg-primary disabled:cursor-not-allowed disabled:bg-gray-300"
+                            className="rounded-full bg-brand-navy px-4 sm:px-5 py-2.5 text-xs font-bold uppercase tracking-wide text-white transition-all active:scale-95 hover:bg-brand-orange disabled:cursor-not-allowed disabled:bg-gray-300 shadow-xs"
                         >
                             Book Now
                         </button>
                     ) : (
                         <Link
                             href={`/freelancer/${freelancer.id}`}
-                            className="rounded-full bg-gray-900 px-5 py-2.5 text-xs font-bold uppercase tracking-wide text-white transition-all active:scale-95 hover:bg-primary"
+                            className="rounded-full bg-brand-navy px-4 sm:px-5 py-2.5 text-xs font-bold uppercase tracking-wide text-white transition-all active:scale-95 hover:bg-brand-orange shadow-xs"
                         >
                             View
                         </Link>

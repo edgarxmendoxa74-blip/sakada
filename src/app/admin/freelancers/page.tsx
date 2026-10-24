@@ -278,11 +278,16 @@ export default function FreelancersPage() {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700">Bio / Description</label>
+                                <label className="block text-sm font-medium text-gray-700">
+                                    Service Description & Inclusions
+                                    <span className="text-xs font-normal text-gray-400 block">
+                                        (Papakita sa bawat menu card at booking details modal)
+                                    </span>
+                                </label>
                                 <textarea
-                                    className="w-full border rounded-lg p-2 mt-1"
+                                    className="w-full border rounded-lg p-2.5 mt-1 text-sm focus:ring-2 focus:ring-primary focus:outline-none"
                                     rows={3}
-                                    placeholder="Short description about the freelancer..."
+                                    placeholder="e.g. Waitstaff / Duties, Inclusions, coverage, or special terms..."
                                     value={formData.bio}
                                     onChange={e => setFormData({ ...formData, bio: e.target.value })}
                                 />
@@ -346,7 +351,7 @@ export default function FreelancersPage() {
                                     <AvailabilityBadge value={f.availability} />
                                 </div>
                                 <div className="mt-3 flex items-center justify-between border-t pt-3">
-                                    <span className="font-bold text-gray-900">₱{f.rate}/{f.rate_unit}</span>
+                                    <span className="font-bold text-emerald-600">₱{f.rate}/{f.rate_unit}</span>
                                     <div className="flex gap-1">
                                         <button onClick={() => handleEdit(f)} aria-label="Edit" className="p-2 text-gray-500 hover:text-blue-600"><Edit className="h-4 w-4" /></button>
                                         <button onClick={() => handleDelete(f.id)} aria-label="Delete" className="p-2 text-gray-500 hover:text-red-600"><Trash2 className="h-4 w-4" /></button>
@@ -385,7 +390,7 @@ export default function FreelancersPage() {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">{f.role}</td>
-                                        <td className="px-6 py-4">₱{f.rate}/{f.rate_unit}</td>
+                                        <td className="px-6 py-4 font-bold text-emerald-600">₱{f.rate}/{f.rate_unit}</td>
                                         <td className="px-6 py-4"><AvailabilityBadge value={f.availability} /></td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex items-center justify-end gap-2">

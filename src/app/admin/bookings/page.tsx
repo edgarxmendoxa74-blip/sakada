@@ -95,7 +95,7 @@ export default function BookingsPage() {
 
                             <div className="mt-4 flex items-center justify-between gap-3 border-t pt-3">
                                 <div>
-                                    <p className="font-bold text-gray-900">{formatRate(Number(b.amount || 0))}</p>
+                                    <p className="font-bold text-emerald-600">{formatRate(Number(b.amount || 0))}</p>
                                     <p className="text-xs text-gray-400">{new Date(b.created_at).toLocaleString()}</p>
                                 </div>
                                 <div className="flex items-center gap-2">

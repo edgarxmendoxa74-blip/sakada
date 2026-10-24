@@ -23,6 +23,9 @@ export const metadata: Metadata = {
   description: "Book reliable freelancers for hotel, restaurant, health, and more.",
 };
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function RootLayout({
   children,
 }: Readonly<{

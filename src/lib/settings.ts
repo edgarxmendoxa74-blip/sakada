@@ -48,7 +48,18 @@ export async function getSiteSettings(): Promise<SiteSettings | null> {
 export async function saveSiteSettings(settings: Partial<SiteSettings>) {
     // Upsert using ID 1
     const { error } = await supabase.from('site_settings').upsert({ id: 1, ...settings });
-    if (error) console.error("Error saving settings:", error);
+    if (error) {
+        console.error("Error saving settings:", error);
+    } else if (typeof window !== "undefined") {
+        if (settings.logo_url !== undefined) {
+            if (settings.logo_url) {
+                localStorage.setItem("sakada_logo_url", settings.logo_url);
+            } else {
+                localStorage.removeItem("sakada_logo_url");
+            }
+            window.dispatchEvent(new CustomEvent("sakada:logo-updated", { detail: settings.logo_url }));
+        }
+    }
     return { error };
 }
 
