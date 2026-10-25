@@ -78,6 +78,7 @@ export default function BookingModal({ freelancer, isOpen, onClose }: BookingMod
     // Save the booking so the admin can track it, then show the confirmation step
     const handlePaid = async () => {
         setSaving(true);
+        setError("");
         const { error: dbError } = await supabase.from("bookings").insert([
             {
                 freelancer_id: freelancer.id,
@@ -91,8 +92,12 @@ export default function BookingModal({ freelancer, isOpen, onClose }: BookingMod
                 status: "pending",
             },
         ]);
-        if (dbError) console.error("Could not save booking (run supabase/schema.sql?):", dbError);
         setSaving(false);
+        if (dbError) {
+            console.error("Could not save booking:", dbError);
+            setError("Hindi ma-save ang booking. Subukan ulit o makipag-ugnayan sa admin.");
+            return;
+        }
         setStep(3);
     };
 
@@ -265,6 +270,8 @@ export default function BookingModal({ freelancer, isOpen, onClose }: BookingMod
                                     </div>
                                 </div>
                             )}
+
+                            {error && <p className="rounded-lg bg-red-50 p-2 text-center text-sm font-medium text-red-600">{error}</p>}
 
                             <div className="flex gap-3">
                                 <button onClick={() => setStep(1)} className="w-1/3 rounded-xl bg-gray-100 py-3.5 font-semibold text-gray-600 transition-colors hover:bg-gray-200">

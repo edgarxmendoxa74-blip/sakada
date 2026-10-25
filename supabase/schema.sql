@@ -125,8 +125,38 @@ create table if not exists bookings (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- Note: like the tables above, RLS is not enabled, so the anon key can read/write.
--- Enable RLS and add proper policies before going to production.
+-- Enable RLS so policies below take effect
+alter table bookings enable row level security;
+
+-- Drop existing policies (safe to re-run)
+drop policy if exists "Public can view bookings" on bookings;
+drop policy if exists "Public can insert bookings" on bookings;
+drop policy if exists "Public can update bookings" on bookings;
+drop policy if exists "Public can delete bookings" on bookings;
+
+-- Anyone (client) can submit a booking
+create policy "Public can insert bookings"
+  on bookings for insert
+  to public
+  with check (true);
+
+-- Anyone (admin dashboard) can read bookings
+create policy "Public can view bookings"
+  on bookings for select
+  to public
+  using (true);
+
+-- Admin can update booking status
+create policy "Public can update bookings"
+  on bookings for update
+  to public
+  using (true);
+
+-- Admin can delete bookings
+create policy "Public can delete bookings"
+  on bookings for delete
+  to public
+  using (true);
 
 -- ---------------------------------------------------------------
 -- Bookings: upgrade an older bookings table that is missing columns

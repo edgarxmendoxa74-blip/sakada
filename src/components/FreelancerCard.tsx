@@ -32,11 +32,11 @@ export default function FreelancerCard({ freelancer, onBook }: FreelancerCardPro
 
             <div className="flex flex-1 flex-col p-4">
                 <Link href={`/freelancer/${freelancer.id}`}>
-                    <h3 className="text-base font-bold leading-tight text-gray-900 transition-colors group-hover:text-brand-navy sm:text-lg">
+                    <h3 className="text-lg font-bold leading-tight text-gray-900 transition-colors group-hover:text-brand-navy sm:text-xl">
                         {freelancer.name}
                     </h3>
                 </Link>
-                <p className="truncate text-sm font-semibold text-brand-orange">{freelancer.role}</p>
+                <p className="truncate text-base font-bold text-brand-orange">{freelancer.role}</p>
                 {freelancer.location && (
                     <p className="mt-1 flex items-center gap-1 text-xs text-gray-400">
                         <MapPin className="h-3 w-3 shrink-0" /> {freelancer.location}
@@ -45,12 +45,12 @@ export default function FreelancerCard({ freelancer, onBook }: FreelancerCardPro
 
                 {/* Service Menu Offer Description */}
                 {freelancer.bio && (
-                    <div className="mt-3 rounded-xl border border-gray-100 bg-gray-50/80 p-2.5 text-xs">
-                        <div className="mb-0.5 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-gray-500">
-                            <FileText className="h-3 w-3 text-brand-orange shrink-0" />
+                    <div className="mt-3 rounded-xl border border-gray-100 bg-gray-50/80 p-3 text-xs">
+                        <div className="mb-1 flex items-center gap-1 text-xs font-bold uppercase tracking-wider text-gray-500">
+                            <FileText className="h-3.5 w-3.5 text-brand-orange shrink-0" />
                             <span>Description / Inclusions:</span>
                         </div>
-                        <p className="line-clamp-3 whitespace-pre-line text-[11px] leading-relaxed text-gray-600">
+                        <p className="line-clamp-3 whitespace-pre-line text-sm leading-relaxed text-gray-600">
                             {freelancer.bio}
                         </p>
                     </div>
@@ -58,8 +58,8 @@ export default function FreelancerCard({ freelancer, onBook }: FreelancerCardPro
 
                 <div className="mt-auto flex items-center justify-between gap-2 pt-4">
                     <div>
-                        <span className="block text-[10px] font-semibold uppercase text-gray-400">Starting at</span>
-                        <span className="text-lg font-black text-emerald-600">{formatRate(freelancer.rate, freelancer.rate_unit)}</span>
+                        <span className="block text-xs font-semibold uppercase text-gray-400">Starting at</span>
+                        <span className="text-xl font-black text-emerald-600">{formatRate(freelancer.rate, freelancer.rate_unit)}</span>
                     </div>
                     {onBook ? (
                         <button

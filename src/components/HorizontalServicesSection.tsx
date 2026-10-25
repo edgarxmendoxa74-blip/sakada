@@ -72,17 +72,17 @@ export default function HorizontalServicesSection({
           )}
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <h3 className="truncate text-base font-black tracking-tight text-gray-900 sm:text-xl">
+              <h3 className="truncate text-lg font-black tracking-tight text-gray-900 sm:text-2xl">
                 {title}
               </h3>
               {badge && (
-                <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] sm:text-xs font-bold text-gray-600">
+                <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-xs sm:text-sm font-bold text-gray-600">
                   {badge}
                 </span>
               )}
             </div>
             {subtitle && (
-              <p className="truncate text-[11px] text-gray-500 sm:text-sm">
+              <p className="truncate text-xs text-gray-500 sm:text-sm">
                 {subtitle}
               </p>
             )}

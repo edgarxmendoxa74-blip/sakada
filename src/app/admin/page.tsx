@@ -13,7 +13,7 @@ export default function AdminLogin() {
     const handleLogin = (e: React.FormEvent) => {
         e.preventDefault();
         // Mock authentication
-        if (email === "admin@sakada.com" && password === "admin123") {
+        if (email === "admin@sakada.com" && password === "sakada34#$") {
             // Set a mock cookie or local storage
             localStorage.setItem("sakada_admin", "true");
             router.push("/admin/dashboard");
